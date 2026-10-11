@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 // Your laptop's Wi-Fi IP address for testing on real phone (Expo Go)
-const LAN_IP = '192.168.100.200';
+const LAN_IP = '192.168.100.6';
 
 export const BASE_URL = Platform.select({
   android: `http://${LAN_IP}:5000`,
