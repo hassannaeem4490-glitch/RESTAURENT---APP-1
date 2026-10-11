@@ -1,0 +1,540 @@
+{
+  "info": {
+    "_postman_id": "c1f8e219-48bf-4c74-8b65-9b2bfb2298bc",
+    "name": "Restaurant App API - Assignment 2",
+    "description": "Complete REST API collection for Restaurant App (React Native, Express, MongoDB) covering Health, Auth, Menu, Orders, and Reservations.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "customer_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "manager_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sample_menu_id",
+      "value": "660c18d098a87b4112e45678",
+      "type": "string"
+    },
+    {
+      "key": "sample_order_id",
+      "value": "660c18d098a87b4112e49999",
+      "type": "string"
+    },
+    {
+      "key": "sample_reservation_id",
+      "value": "660c18d098a87b4112e48888",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Health",
+      "item": [
+        {
+          "name": "GET Health Route",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register Customer (POST)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Ali Ahmed\",\n  \"email\": \"ali@test.com\",\n  \"password\": \"Pass1234\",\n  \"role\": \"customer\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register Manager (POST)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Sara Manager\",\n  \"email\": \"sara@test.com\",\n  \"password\": \"Manager123\",\n  \"role\": \"manager\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login Customer (POST)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.token) {",
+                  "  pm.collectionVariables.set('customer_token', json.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@test.com\",\n  \"password\": \"Pass1234\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login Manager (POST)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.token) {",
+                  "  pm.collectionVariables.set('manager_token', json.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"manager@test.com\",\n  \"password\": \"Manager123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Profile (GET with Bearer)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "profile"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Menu",
+      "item": [
+        {
+          "name": "GET All Menu Items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/menu",
+              "host": ["{{base_url}}"],
+              "path": ["api", "menu"]
+            }
+          }
+        },
+        {
+          "name": "GET Menu Filter Category (Mains)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/menu?category=Mains",
+              "host": ["{{base_url}}"],
+              "path": ["api", "menu"],
+              "query": [{ "key": "category", "value": "Mains" }]
+            }
+          }
+        },
+        {
+          "name": "GET Menu Search Name (Pizza)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/menu?search=Pizza",
+              "host": ["{{base_url}}"],
+              "path": ["api", "menu"],
+              "query": [{ "key": "search", "value": "Pizza" }]
+            }
+          }
+        },
+        {
+          "name": "[FAIL] GET Menu Invalid ObjectId (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/menu/not-a-valid-id-123",
+              "host": ["{{base_url}}"],
+              "path": ["api", "menu", "not-a-valid-id-123"]
+            }
+          }
+        },
+        {
+          "name": "[FAIL] GET Menu Not Found (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/menu/60c72b2f9b1d8b2bad6838a0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "menu", "60c72b2f9b1d8b2bad6838a0"]
+            }
+          }
+        },
+        {
+          "name": "[FAIL] POST Menu Item - No Token (401)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Garlic Bread\",\n  \"description\": \"Toasted with herbs\",\n  \"price\": 4,\n  \"category\": \"Starters\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/menu",
+              "host": ["{{base_url}}"],
+              "path": ["api", "menu"]
+            }
+          }
+        },
+        {
+          "name": "[FAIL] POST Menu Item - Customer Token (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Garlic Bread\",\n  \"description\": \"Toasted with herbs\",\n  \"price\": 4,\n  \"category\": \"Starters\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/menu",
+              "host": ["{{base_url}}"],
+              "path": ["api", "menu"]
+            }
+          }
+        },
+        {
+          "name": "[FAIL] POST Menu Item - Negative Price (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{manager_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Negative Item\",\n  \"description\": \"Bad price test\",\n  \"price\": -5,\n  \"category\": \"Mains\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/menu",
+              "host": ["{{base_url}}"],
+              "path": ["api", "menu"]
+            }
+          }
+        },
+        {
+          "name": "[SUCCESS] POST Menu Item - Manager Token (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{manager_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chicken Alfredo Fettuccine\",\n  \"description\": \"Handmade pasta in rich garlic cream sauce\",\n  \"price\": 14.5,\n  \"category\": \"Mains\",\n  \"emoji\": \"🍝\",\n  \"isSpecial\": true,\n  \"isAvailable\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/menu",
+              "host": ["{{base_url}}"],
+              "path": ["api", "menu"]
+            }
+          }
+        },
+        {
+          "name": "PUT Update Menu Price (200)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{manager_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 15.0\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/menu/{{sample_menu_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "menu", "{{sample_menu_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Orders",
+      "item": [
+        {
+          "name": "POST Place Order (Dine-in)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderType\": \"Dine-in\",\n  \"table\": \"4\",\n  \"discountPercent\": 10,\n  \"items\": [\n    {\n      \"name\": \"Margherita Pizza\",\n      \"quantity\": 2\n    },\n    {\n      \"name\": \"Fresh Lemonade\",\n      \"quantity\": 1\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "orders"]
+            }
+          }
+        },
+        {
+          "name": "POST Place Order (Takeaway)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderType\": \"Takeaway\",\n  \"pickupTime\": \"20:30\",\n  \"items\": [\n    {\n      \"name\": \"Veg Burger\",\n      \"quantity\": 1\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "orders"]
+            }
+          }
+        },
+        {
+          "name": "GET My Orders (Customer)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/orders/my",
+              "host": ["{{base_url}}"],
+              "path": ["api", "orders", "my"]
+            }
+          }
+        },
+        {
+          "name": "GET All Orders (Manager)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{manager_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "orders"]
+            }
+          }
+        },
+        {
+          "name": "PATCH Update Order Status to Preparing",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{manager_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Preparing\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/orders/{{sample_order_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "orders", "{{sample_order_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "[FAIL] PATCH Invalid Order Status Regression (400)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{manager_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Pending\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/orders/{{sample_order_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "orders", "{{sample_order_id}}", "status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Reservations",
+      "item": [
+        {
+          "name": "GET Tables Configuration",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/reservations/tables",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reservations", "tables"]
+            }
+          }
+        },
+        {
+          "name": "POST Create Reservation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contactName\": \"Ali Ahmed\",\n  \"contactPhone\": \"0300-1234567\",\n  \"date\": \"Thu Oct 08 2026\",\n  \"timeSlot\": \"19:00\",\n  \"partySize\": 4,\n  \"tableId\": \"T3\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reservations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reservations"]
+            }
+          }
+        },
+        {
+          "name": "[FAIL] POST Conflicting Reservation Double-Booking (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contactName\": \"Another Person\",\n  \"contactPhone\": \"0321-7654321\",\n  \"date\": \"Thu Oct 08 2026\",\n  \"timeSlot\": \"19:00\",\n  \"partySize\": 4,\n  \"tableId\": \"T3\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reservations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reservations"]
+            }
+          }
+        },
+        {
+          "name": "GET My Reservations",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/reservations/my",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reservations", "my"]
+            }
+          }
+        },
+        {
+          "name": "GET All Reservations (Manager)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{manager_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/reservations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reservations"]
+            }
+          }
+        },
+        {
+          "name": "PATCH Accept Reservation (Manager)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{manager_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Confirmed\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/reservations/{{sample_reservation_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reservations", "{{sample_reservation_id}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
