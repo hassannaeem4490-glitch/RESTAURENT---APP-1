@@ -1,142 +1,158 @@
-# Software Requirements Specification (SRS v2.0)
-## Restaurant Mobile Application with Express & MongoDB Backend
-**Course:** Mobile Application Development (Fall 2026)  
-**Deliverable:** Assignment 2 â€” SRS Update and API Architecture  
+# Software Requirements Specification (SRS_v2)
+### Hassan's Restaurant Mobile App: React Native, Node.js, Express and MongoDB (Assignment 2, Fall 2026)
+
+**Prepared by:** Hassan Naeem, AUIC Islamabad | **Version:** 2.0 (revision of the A1 SRS) | **Date:** October 2026
 
 ---
 
 ## 1. Introduction
 
+### 1.1 Purpose
+In A1 the app ran only on mock data stored on each phone. Version 2 adds an Express server and a MongoDB database so every phone reads and writes the same menu, orders and bookings. This SRS lists what the system must do and how data and API calls are organised.
+
 ### 1.2 Scope
-In Assignment 1, the Restaurant App functioned as an isolated client application using local state and mock data. In this release (v2.0), the scope is updated to include a centralized backend server and cloud database to eliminate data fragmentation.
 
-#### In-Scope (v2.0)
-- **Node.js & Express RESTful Server:** Serving centralized business logic and HTTP API endpoints.
-- **MongoDB Database (via Mongoose ODM):** Centralized persistence for user accounts, menu items, table layouts, reservations, and customer orders.
-- **Authentication & Security:** JSON Web Token (JWT) based stateless authorization and `bcryptjs` password hashing.
-- **Multi-Device Synchronization:**
-  - *Problem 1 (Order invisibility):* "I placed an order from my phone, but when I checked on my brother's phone it wasn't there."  
-    **Solution:** Orders are posted directly to the MongoDB database via `POST /api/orders` and retrieved on any device logged into that account via `GET /api/orders/my`.
-  - *Problem 2 (Manager dish pricing & availability):* "When a dish runs out, I want to mark it unavailable once and have every customer see it."  
-    **Solution:** When a manager updates an item price or toggles availability via `PUT /api/menu/:id`, the change updates the database instantly; all connected customer devices read directly from `GET /api/menu`.
-  - *Problem 3 (Real-Time Order Tracking):* Polling every 10 seconds ensures state transitions made on manager devices reflect automatically on the customer's tracking screen without restarting the app.
+| In scope | Out of scope |
+| :--- | :--- |
+| A1 customer features (signup/login, menu, cart, orders, tracking, reservations, profile) and manager features (menu management, orders, reservations).<br><br>Backend (now in scope): REST API with Node.js, Express and MongoDB, JWT login, bcrypt passwords, role checks, server side validation, seed script. | Real payments.<br>Push notifications (status is polled instead).<br>Real food photos (emoji icons are used).<br>Cloud deployment of the server (it runs on the laptop). |
 
-#### Out-of-Scope (v2.0)
-- Real credit card payment gateway processing (e.g. Stripe/PayPal) â€” simulated orders only.
-- Native APNS / FCM push notifications.
-- Live GPS courier dispatch tracking.
+#### Problems found in A1 and how each is fixed
 
----
-
-### 1.3 Definitions and Acronyms
-1. **API (Application Programming Interface):** A set of defined rules that enables the React Native mobile app to interact with the backend server.
-2. **REST (Representational State Transfer):** An architectural style for network applications using stateless HTTP methods (GET, POST, PUT, PATCH, DELETE).
-3. **Endpoint:** A specific URL where a web service can be accessed by a client application (e.g. `/api/menu`).
-4. **JSON (JavaScript Object Notation):** A lightweight, human-readable data format used to transmit payloads between the React Native app and Express server.
-5. **MongoDB:** A NoSQL document-oriented database that stores records as flexible JSON-like documents (BSON).
-6. **Collection:** A grouping of MongoDB documents, equivalent to a table in relational database systems.
-7. **Mongoose:** An Object Data Modeling (ODM) library for Node.js and MongoDB that manages relationships, schema validation, and database operations.
-8. **Middleware:** Functions that have access to the request (`req`) and response (`res`) objects in the Express pipeline (e.g., token verification, error handling).
-9. **JWT (JSON Web Token):** A compact, URL-safe means of representing claims securely between two parties, used here for stateless authentication.
-10. **HTTP Status Code:** Standard 3-digit status codes indicating whether a specific HTTP request completed successfully (e.g. 200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict, 500 Server Error).
+| # | Problem in A1 | Fix in A2 |
+| :---: | :--- | :--- |
+| 1 | Manager changes a price on his phone, customers still see the old one. | Menu lives in MongoDB. All phones call `GET /api/menu`; manager edits with `PUT /api/menu/:id`. |
+| 2 | Marking a dish unavailable only affected one phone. | `available` flag is saved in the database and the server rejects orders containing unavailable items. |
+| 3 | Orders vanish on reinstall and are invisible on a second phone. | Orders are saved with the user id. `GET /api/orders/my` works on any device after login. |
+| 4 | Two phones could book the same table at the same time. | Server checks seats, date and time and returns 409 if the table is taken. |
+| 5 | Accounts and plain-text passwords sat in a mock file in the app. | Users are in the database, passwords hashed with bcrypt, login returns a 1 day JWT. |
+| 6 | Order tracking used a fake timer; manager had no real effect. | Manager updates status via PATCH. Tracking screen polls `GET /api/orders/my` every 10 s. |
+| 7 | Order total was calculated on the phone and could be wrong or edited. | Server recalculates the total from database prices and ignores the app total. |
+| 8 | Nothing stopped a customer from using manager actions. | Menu write endpoints need `protect` and `managerOnly` (401 / 403). |
 
 ---
 
-## 5. Database Design (Replaces Section 5)
+### 1.3 Definitions
 
-![Entity Relationship Diagram](er_diagram_A2.png)
+| Term | Meaning |
+| :--- | :--- |
+| **API / Endpoint** | API: the set of server URLs the app calls. Endpoint: one URL plus HTTP method, e.g. `POST /api/orders`. |
+| **REST** | API style where URLs name things (`/api/menu`) and HTTP methods (GET, POST, PUT, PATCH, DELETE) say the action. |
+| **JSON** | Text format used for request and response bodies. |
+| **MongoDB / Collection** | MongoDB stores JSON-like documents. A collection is a group of similar documents (like a table), e.g. orders. |
+| **Mongoose** | Node.js library that defines schemas and models for MongoDB and validates data before saving. |
+| **Middleware** | Express function that runs before the controller, e.g. to check a token or role. |
+| **JWT** | Signed token returned at login and sent as `Authorization: Bearer <token>` to prove identity. |
+| **HTTP Status Code** | Number showing the result: 200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict, 500 Server Error. |
+| **bcrypt / Seeding / Polling** | bcrypt: one-way password hashing. Seeding: script that resets and fills collections. Polling: asking the server again every fixed interval. |
 
-| Collection | Fields and Types | Relationships and Rules |
+---
+
+## 2. Overall Description
+
+Three tiers: the **React Native app** (Expo, React Navigation, Context, reducers, custom hooks) shows screens and stores only the login token; the **Express server** (cors, dotenv, bcryptjs, jsonwebtoken) holds all rules; **MongoDB** (database `restaurant_app`, via Mongoose) is the only place data is stored. The phone and laptop must be on the same Wi-Fi (`BASE_URL` in `src/api/client.js`; `10.0.2.2` for the Android emulator).
+
+| User | Abilities |
+| :--- | :--- |
+| **Customer** | Register, log in, view menu, order, track own orders, book tables, see own bookings. |
+| **Manager** | Everything above plus add/edit/delete menu items, toggle availability, see all orders, change order status, accept or decline bookings. |
+| **Visitor** | View the menu, register or log in. |
+
+---
+
+## 3. Functional Requirements
+
+| ID | Requirement |
+| :--- | :--- |
+| **FR-1** | Register (duplicate email gives 409) and log in. Login returns a token valid for one day with name, email and role. The password is never returned. |
+| **FR-2** | The app keeps the token and user in `AuthContext` and `AsyncStorage` so login survives closing the app. Logout clears both. |
+| **FR-3** | Anyone can view the menu with category filter and case insensitive name search. Screens show loading, error with Retry, and pull to refresh. |
+| **FR-4** | Only a manager can add, edit, delete items or toggle availability. The list reloads from the server after each change. |
+| **FR-5** | Cart is kept in the app (reducer). Placing an order sends item ids and quantities; the server calculates the total from database prices and rejects unavailable items. |
+| **FR-6** | Customers see only their own orders; managers see all. Status moves only Pending, Preparing, Ready, Served. Cancelled is allowed only from Pending, otherwise 400. |
+| **FR-7** | Order Tracking polls every 10 seconds and clears the interval when the screen closes. |
+| **FR-8** | A reservation needs table, date, time and guests. The server checks seats and that the table is free at that time (else 409). Manager accepts or declines. |
+| **FR-9** | Protected endpoints need `Authorization: Bearer <token>` (401 if missing). Manager-only endpoints return 403 for customers. Unknown routes return 404 "Route not found"; unexpected errors return JSON with 500. |
+| **FR-10** | Seed script empties the collections and inserts one customer, one manager (hashed passwords), 15 menu items and 6 tables. |
+
+---
+
+## 4. Non-Functional Requirements
+
+- **Security:** bcrypt hashes, JWT secret only in `.env` (never committed), role checks on the server, no password in any response.
+- **Reliability:** invalid input or invalid ids return JSON errors and never crash the server; if MongoDB fails at start the server logs the error and exits.
+- **Performance and usability:** list requests respond in about 2 s on the local network; every data screen has loading and retry states.
+- **Maintainability:** routes only map URLs, controllers hold logic, models hold schemas, middleware handles auth; API calls are isolated in `src/api/client.js`.
+
+---
+
+## 5. Database Design (replaces the A1 mock data section)
+
+| Collection | Fields and types | Relationships and rules |
 | :--- | :--- | :--- |
-| **Users** | `_id`: ObjectId<br>`fullName`: String (req)<br>`email`: String (req, unique, lowercase)<br>`password`: String (req, bcrypt hash)<br>`role`: String (enum: `['customer', 'manager']`)<br>`createdAt`, `updatedAt`: Date | **Rules:** Email must be a valid RFC format and unique across all records. Passwords must never be stored in plaintext. |
-| **MenuItems** | `_id`: ObjectId<br>`name`: String (req, unique)<br>`description`: String (req)<br>`price`: Number (req, min: 0)<br>`category`: String (enum: `['Starters', 'Mains', 'Desserts', 'Drinks']`)<br>`emoji`: String<br>`isSpecial`: Boolean (default: false)<br>`isAvailable`: Boolean (default: true)<br>`createdAt`, `updatedAt`: Date | **Rules:** Dish price cannot be negative. Dishes marked `isAvailable: false` cannot be ordered by customers. |
-| **Tables** | `_id`: ObjectId<br>`tableId`: String (req, unique, e.g. "T1")<br>`seats`: Number (req, min: 1)<br>`createdAt`, `updatedAt`: Date | **Rules:** Unique table numbers. Seats define maximum customer party capacity. |
-| **Reservations** | `_id`: ObjectId<br>`user`: ObjectId (ref: `Users`, optional)<br>`contactName`: String (req)<br>`contactPhone`: String (req, PK mobile regex)<br>`date`: String (req)<br>`timeSlot`: String (req)<br>`partySize`: Number (req, min: 1, max: 12)<br>`tableId`: String (req)<br>`status`: String (enum: `['Pending', 'Confirmed', 'Declined', 'Cancelled']`)<br>`createdAt`, `updatedAt`: Date | **Relationships:** References `Users` collection.<br>**Rules:** A table cannot have more than one confirmed/pending reservation for the same date and time slot. Party size cannot exceed table seats. |
-| **Orders** | `_id`: ObjectId<br>`user`: ObjectId (ref: `Users`, req)<br>`items`: Array of objects (`menuItem` ObjectId, `name`, `price`, `quantity`, `emoji`)<br>`subtotal`: Number (req, min: 0)<br>`serviceCharge`: Number (default: 0)<br>`salesTax`: Number (default: 0)<br>`discount`: Number (default: 0)<br>`total`: Number (req, min: 0)<br>`orderType`: String (enum: `['Dine-in', 'Takeaway']`)<br>`table`: String (null if Takeaway)<br>`pickupTime`: String (null if Dine-in)<br>`status`: String (enum: `['Pending', 'Preparing', 'Ready', 'Served', 'Cancelled']`)<br>`createdAt`, `updatedAt`: Date | **Relationships:** Each order stores the `_id` of the placing User and references `MenuItems`.<br>**Rules:** Status progression is forward only (`Pending` â†’ `Preparing` â†’ `Ready` â†’ `Served`). Cancellation is allowed only while `Pending`. Prices are computed server-side from database records. |
+| **Users** | `name` String, required<br>`email` String, required, unique<br>`password` String, required (hashed)<br>`role` enum [customer, manager], default customer | Email unique. Referenced by Orders and Reservations. Hash never sent back. |
+| **MenuItems** | `name` String, required<br>`description` String<br>`price` Number, required, min 0<br>`category` String, required<br>`available` Boolean, default true | Only a manager can write. Orders store the item id plus a copy of name and price at order time. |
+| **Tables** | `number` Number, required, unique<br>`seats` Number, required, min 1 | Referenced by Reservations. Guests cannot exceed seats. |
+| **Reservations** | `user` ObjectId (ref Users), required<br>`table` ObjectId (ref Tables), required<br>`date`, `time` String, required<br>`guests` Number, min 1<br>`status` enum [Pending, Accepted, Declined]<br>`timestamps` createdAt, updatedAt | One user and one table per booking. Same table, date and time cannot be booked twice (409). |
+| **Orders** | `user` ObjectId (ref Users), required<br>`items` [ { `menuItem` ref MenuItems, `name`, `price`, `quantity` min 1 } ]<br>`total` Number (server calculated)<br>`status` enum [Pending, Preparing, Ready, Served, Cancelled], default Pending<br>`timestamps` createdAt, updatedAt | Each order stores the id of the user who placed it. Status only moves forward; Cancelled only from Pending. |
+
+<br>
+
+![Figure 1: Collections and their references](er_diagram_A2.png)
+
+*Figure 1: Collections and their references*
 
 ---
 
-## 8. API Endpoints Specification
+## 6. Screens and Data Sources
 
-| Method | Endpoint | Access | Request Body | Response Description |
+| Screen | Data source |
+| :--- | :--- |
+| **Login / Signup** | `POST /api/auth/register`, `POST /api/auth/login` |
+| **Menu** | `GET /api/menu` (category, search) through the `useApi` hook |
+| **Cart, Order Summary** | Cart in app state. Place Order calls `POST /api/orders` |
+| **Order Tracking** | `GET /api/orders/my` every 10 seconds |
+| **Reservations** | `POST /api/reservations`, `GET /api/reservations/my` |
+| **Manager Dashboard** | Orders, reservations and menu endpoints marked Manager in Section 8 |
+
+---
+
+## 7. Diagrams
+
+### 7.1 Sequence diagram: customer places an order (App, Express Server, MongoDB)
+
+![Figure 2: Place order request, server checks, response and polling](sequence_diagram_A2.png)
+
+*Figure 2: Place order request, server checks, response and polling*
+
+### 7.2 Deployment diagram
+
+![Figure 3: Phones talk over Wi-Fi to the Express server on the laptop, which uses MongoDB](deployment_diagram_A2.png)
+
+*Figure 3: Phones talk over Wi-Fi to the Express server on the laptop, which uses MongoDB*
+
+The A1 class, use case and state machine diagrams stay valid; the order state machine is now enforced by the server.
+
+---
+
+## 8. API Endpoints (new)
+
+| Method | Endpoint | Access | Request body | Response |
 | :--- | :--- | :--- | :--- | :--- |
-| **GET** | `/api/health` | Public | None | Server health status (`{ status: 'ok', time }`) |
-| **POST** | `/api/auth/register` | Public | `{ fullName, email, password, role }` | 201 Created: JWT token and safe user payload |
-| **POST** | `/api/auth/login` | Public | `{ email, password }` | 200 OK: JWT token and user profile info |
-| **GET** | `/api/auth/profile` | Protected | None | 200 OK: Current logged-in user profile details |
-| **GET** | `/api/menu` | Public | None (query: `category`, `search`) | 200 OK: Array of menu items matching filter |
-| **GET** | `/api/menu/:id` | Public | None | 200 OK: Single menu item; 400 if invalid id; 404 if not found |
-| **POST** | `/api/menu` | Manager | `{ name, description, price, category, emoji, isSpecial, isAvailable }` | 201 Created: New dish item added to database |
-| **PUT** | `/api/menu/:id` | Manager | `{ price, isAvailable, name, ... }` | 200 OK: Updated menu item record |
-| **DELETE**| `/api/menu/:id` | Manager | None | 200 OK: Confirmation of item deletion |
-| **POST** | `/api/orders` | Customer | `{ items, orderType, table, pickupTime, discountPercent }` | 201 Created: Order created with authoritative DB calculation |
-| **GET** | `/api/orders/my` | Customer | None | 200 OK: Array of user's placed orders |
-| **GET** | `/api/orders` | Manager | None | 200 OK: Array of all incoming customer orders |
-| **PATCH**| `/api/orders/:id/status`| Manager | `{ status }` | 200 OK: Status progression update (Pending â†’ Preparing â†’ Ready â†’ Served) |
-| **GET** | `/api/reservations/tables` | Public | None | 200 OK: List of restaurant tables and capacities |
-| **POST** | `/api/reservations` | Customer | `{ contactName, contactPhone, date, timeSlot, partySize, tableId }` | 201 Created: Reservation created; 409 if conflict |
-| **GET** | `/api/reservations/my` | Customer | None | 200 OK: Customer's reservation history |
-| **GET** | `/api/reservations` | Manager | None | 200 OK: All reservation bookings for management review |
-| **PATCH**| `/api/reservations/:id` | Manager | `{ status: 'Confirmed' \| 'Declined' }` | 200 OK: Updated reservation status |
-| **PATCH**| `/api/reservations/:id/cancel`| Customer | None | 200 OK: Cancellation of reservation |
+| **GET** | `/api/health` | Public | None | 200 { status, time } |
+| **POST** | `/api/auth/register` | Public | name, email, password | 201 token and user; 409 if email exists |
+| **POST** | `/api/auth/login` | Public | email, password | 200 token and user; 401 if wrong |
+| **GET** | `/api/menu` | Public | None (?category=, ?search=) | 200 list of items |
+| **GET** | `/api/menu/:id` | Public | None | 200 item; 404 not found; 400 bad id |
+| **POST** | `/api/menu` | Manager | name, price, category, description, available | 201 item; 400 bad data |
+| **PUT** | `/api/menu/:id` | Manager | fields to update | 200 updated item; 404 |
+| **DELETE** | `/api/menu/:id` | Manager | None | 200 message; 404 |
+| **POST** | `/api/orders` | Logged in | items: [{ menuItem, quantity }] | 201 order with server total; 400 if unavailable |
+| **GET** | `/api/orders/my` | Logged in | None | 200 own orders |
+| **GET** | `/api/orders` | Manager | None | 200 all orders |
+| **PATCH** | `/api/orders/:id/status` | Manager | status | 200 order; 400 move not allowed |
+| **POST** | `/api/reservations` | Logged in | table, date, time, guests | 201 booking; 409 table taken; 400 |
+| **GET** | `/api/reservations/my` | Logged in | None | 200 own bookings |
+| **GET** | `/api/reservations` | Manager | None | 200 all bookings |
+| **PATCH** | `/api/reservations/:id` | Manager | status (Accepted or Declined) | 200 booking |
 
----
-
-## 9. Architectural Diagrams
-
-### 9.1 Sequence Diagram: Customer Places an Order
-
-![Sequence Diagram](sequence_diagram_A2.png)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Customer as Customer (App)
-    participant Server as Express Server
-    participant DB as MongoDB
-
-    Customer->>Server: POST /api/orders (items, orderType, table) + Bearer Token
-    activate Server
-    Server->>Server: Verify JWT Token (authMiddleware)
-    Server->>DB: Query MenuItems for price & availability
-    activate DB
-    DB-->>Server: Return active menu item documents
-    deactivate DB
-    Server->>Server: Authoritative Total Calculation (subtotal, tax, service charge)
-    Server->>DB: Save new Order document (status: "Pending")
-    activate DB
-    DB-->>Server: Order saved confirmation with _id
-    deactivate DB
-    Server-->>Customer: 201 Created (Order Object, calculated total)
-    deactivate Server
-    Customer->>Customer: Navigate to OrderTrackingScreen and begin 10s status polling
-```
-
-### 9.2 Deployment Diagram
-
-![Deployment Diagram](deployment_diagram_A2.png)
-
-```mermaid
-flowchart TD
-    subgraph Client_Tier ["Client Tier (Mobile Devices)"]
-        PhoneA["Customer Phone (Expo Go / React Native App)\nIP: 192.168.1.50"]
-        PhoneB["Manager Phone (Expo Go / React Native App)\nIP: 192.168.1.60"]
-    end
-
-    subgraph Server_Tier ["Application Tier (Local Laptop)"]
-        ServerNode["Node.js / Express Server\nPort: 5000\nIP: 192.168.1.15"]
-        RESTRouter["Express Router & Controllers\n(Auth, Menu, Orders, Reservations)"]
-        AuthMiddleware["JWT Authentication Middleware\n(protect, managerOnly)"]
-    end
-
-    subgraph Data_Tier ["Database Tier"]
-        Mongo["MongoDB Database (Atlas Cloud / Local)\nDatabase: restaurant_app\nPort: 27017"]
-    end
-
-    PhoneA -->|"HTTP JSON Requests (Port 5000)"| ServerNode
-    PhoneB -->|"HTTP JSON Requests (Port 5000)"| ServerNode
-    ServerNode --> RESTRouter
-    RESTRouter --> AuthMiddleware
-    RESTRouter -->|"Mongoose ODM TCP Connection"| Mongo
-```
-
+*Manager = `protect` + `managerOnly`. Logged in = `protect` (header `Authorization: Bearer <token>`).*
